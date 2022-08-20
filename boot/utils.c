@@ -13,13 +13,14 @@ int row = 0;
 void print_char(char c, int color) {
   if(col >= VGA_WIDTH || c == '\n')
   {
-    col = 0;
-    row++;
+    col = 0; 
+    cow++;
     if(c == '\n')
       return;
 
   }
   video_mem[(row*VGA_WIDTH) + col] = (color << 8) | c;
+  col++;
 }
 
 
@@ -30,6 +31,7 @@ void initialize_terminal(){
       print_char(' ', 0);
   row = 0;
   col = 0;
+
 }
 
 size_t strlen(const char *str) {
@@ -43,14 +45,8 @@ return len;
 
 void print_message(const char *msg){
   int len = strlen(msg);
-  
   for(int i = 0; i < len; i++) {
     print_char(msg[i], 0xa);
-    col++;
   }
 
 }
-
-
-
-  
