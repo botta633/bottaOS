@@ -55,7 +55,7 @@ TestA20:
     mov word[ds:0x7c00],0xa200
     cmp word[es:0x7c10],0xa200
     jne SetA20LineDone
-    mov word[0x7c00],0xb200
+   mov word[0x7c00],0xb200
     cmp word[es:0x7c10],0xb200
     je End
     
