@@ -24,8 +24,8 @@ struct Page
 };
 
 typedef uint64_t PDE;
-typedef PDE *PD;
-typedef PD *PDPTR;
+typedef PDE* PD;
+typedef PD* PDPTR;
 
 #define PTE_P 1
 #define PTE_W 2
