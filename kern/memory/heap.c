@@ -12,7 +12,7 @@ void init_heap()
 
   int i = 0;
 
-  for (i = 0; i < 9; i++)
+  for (; i < 9; i++)
   {
     // to study the effect of caching heap->manager.zones[i]
     heap->manager.zones[i].firstFree = NULL;
@@ -43,9 +43,7 @@ void init_heap()
 static void divide_area(struct area *area, int size)
 {
   area->next = area + (size >> 1);
-  area->used = 0;
   area->next->next = NULL;
-  area->next->used = 0;
 }
 
 static struct area *split_zone_to_match_size(struct zone *zone, int size)
@@ -66,6 +64,7 @@ static struct area *split_zone_to_match_size(struct zone *zone, int size)
       break;
     temp = &(heap->manager.zones[temp->idx - 1]);
   }
+
   tempArea->used = 1;
   temp->freeAreas--;
   temp->used = tempArea;
@@ -74,18 +73,14 @@ static struct area *split_zone_to_match_size(struct zone *zone, int size)
   return tempArea;
 }
 
+// main function of zone allocator
 void *zalloc(int size)
 {
   int largest_idx = 0;
 
   for (int i = GETIDX(size); i < 10; i++)
-  {
-
     if (heap->manager.zones[i].freeAreas >= 1)
-    {
       return (void *)split_zone_to_match_size(&(heap->manager.zones[i]), size);
-    }
-  }
 
   return NULL;
 }
