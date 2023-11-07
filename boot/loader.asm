@@ -14,7 +14,6 @@ start:
     test edx,(1<<29)
     jz NotSupport
 
-
 LoadKernel:
     mov si,ReadPacket
     mov word[si],0x10
@@ -32,21 +31,24 @@ GetMemInfoStart:
     mov eax,0xe820
     mov edx,0x534d4150
     mov ecx,20
-    mov edi,0x9000
+    mov dword[0x9000],0
+    mov edi,0x9008
     xor ebx,ebx
     int 0x15
     jc NotSupport
 
 GetMemInfo:
     add edi,20
+    inc dword[0x9000]
+    test ebx,ebx
+    jz GetMemDone
+
     mov eax,0xe820
     mov edx,0x534d4150
     mov ecx,20
     int 0x15
-    jc GetMemDone
+    jnc GetMemInfo
 
-    test ebx,ebx
-    jnz GetMemInfo
 
 GetMemDone:
 TestA20:
@@ -58,7 +60,6 @@ TestA20:
     mov word[0x7c00],0xb200
     cmp word[es:0x7c10],0xb200
     je End
-    
 
 SetA20LineDone:
     xor ax,ax
@@ -67,7 +68,7 @@ SetA20LineDone:
 SetVideoMode:
     mov ax,3
     int 0x10
-    
+
     cli
     lgdt [Gdt32Ptr]
     lidt [Idt32Ptr]
@@ -75,7 +76,17 @@ SetVideoMode:
     mov eax,cr0
     or eax,1
     mov cr0,eax
+enableSSE:    
+    fninit
+    fldcw [fcw]
 
+    mov eax, cr0
+    and al, ~0x04
+    or al, 0x22
+    mov cr0, eax
+    mov eax, cr4
+    or ax, 0x600
+    mov cr4, eax
     jmp 8:PMEntry
 
 ReadError:
@@ -98,10 +109,14 @@ PMEntry:
     xor eax,eax
     mov ecx,0x10000/4
     rep stosd
-    
-    mov dword[0x70000],0x71007
-    mov dword[0x71000],10000111b
 
+    mov dword[0x70000],0x71003
+    mov dword[0x71000],10000011b
+
+    mov eax,(0xffff800000000000>>39)
+    and eax,0x1ff
+    mov dword[0x70000+eax*8],0x72003
+    mov dword[0x72000],10000011b
 
     lgdt [Gdt64Ptr]
 
@@ -137,13 +152,14 @@ LMEntry:
     mov rcx,51200/8
     rep movsq
 
-    jmp 0x200000
-    
+    mov rax,0xffff800000200000
+    jmp rax
+
 LEnd:
     hlt
     jmp LEnd
-    
-    
+
+
 
 DriveId:    db 0
 ReadPacket: times 16 db 0
@@ -164,7 +180,9 @@ Data32:
     db 0x92
     db 0xcf
     db 0
-    
+
+fcw: dw 0x037F
+
 Gdt32Len: equ $-Gdt32
 
 Gdt32Ptr: dw Gdt32Len-1
