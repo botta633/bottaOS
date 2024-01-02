@@ -2,21 +2,40 @@
 #include "../includes/lib.h"
 #include "../includes/print.h"
 #include "../../boot/mem.h"
+#include "mem.h"
 //
 // to be resolved in runtime
+
+void *zalloc(int size)
+{
+    int number_of_pages = 1;
+    if(size <= 0)
+        return NULL;
+    if (size <= PAGE_SIZE)
+        return kalloc();
+    
+    number_of_pages = ceil(size/PAGE_SIZE);
+
+    void *addr = kalloc();
+    
+    int i =  1;
+
+    while(i < number_of_pages)
+        kalloc();
+    return addr;
+}
+
 
 struct heap *heap = (struct heap *)(P2V(PMEM_KERN_START));
 
 void init_heap()
 {
-
   int i = 0;
 
   for (; i < 9; i++)
   {
     // to study the effect of caching heap->manager.zones[i]
-    heap->manager.zones[i].firstFree = NULL;
-    heap->manager.zones[i].used = NULL;
+    heap->manager.zones[i].first_free = NULL;
     heap->manager.zones[i].freeAreas = 0;
     heap->manager.zones[i].usedAreas = 0;
     heap->manager.zones[i].times_accessed = 0;
@@ -26,31 +45,30 @@ void init_heap()
   }
 
   // initializing the largest zone with two free Areas
-  void *first_free = (void *)(P2V(PMEM_KERN_START) + sizeof(struct heap));
+  void *first_free = kall;
   memset(first_free, 0, GETSIZE(i));
 
-  heap->manager.zones[i].firstFree = first_free;
-  heap->manager.zones[i].firstFree->next = NULL;
+  heap->manager.zones[i].first_free = first_free;
+  heap->manager.zones[i].first_free->next = NULL;
   heap->manager.zones[i].freeAreas = 1;
   heap->manager.zones[i].usedAreas = 0;
   heap->manager.zones[i].times_accessed = 0;
-  heap->manager.zones[i].used = NULL;
   heap->manager.zones[i].idx = i;
   heap->manager.activeIdxes[i] = 1;
   heap->idx_of_largest_free = i;
 }
 
-static void divide_area(struct area *area, int size)
+static void divide_area(struct block *area, int size)
 {
   area->next = area + (size >> 1);
   area->next->next = NULL;
 }
 
-static struct area *split_zone_to_match_size(struct zone *zone, int size)
+static struct block *split_zone_to_match_size(struct zone *zone, int size)
 {
 
   struct zone *temp = zone;
-  struct area *tempArea = temp->firstFree;
+  struct block *tempArea = temp->firstFree;
 
   while (temp->idx != GETIDX(size))
   {

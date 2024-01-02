@@ -1,6 +1,6 @@
 
 // kernel physical memory
-#define PMEM_KERN_START (0x100000)
+#define PMEM_KERN_START (0xF000)
 #define PMEM_KERN_SIZE (200 * 1024 * 1024)
 
 // user physical memory

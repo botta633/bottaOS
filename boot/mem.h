@@ -5,6 +5,9 @@
 #include "stddef.h"
 #include "stdbool.h"
 
+typedef uint64_t pte_t;
+#define NUM_ENTRIES 512
+
 struct E820
 {
     uint64_t address;
@@ -23,7 +26,9 @@ struct Page
     struct Page *next;
 };
 
-typedef uint64_t PDE;
+
+typedef uint64_t PML4;
+typedef PML4 *PDE;
 typedef PDE* PD;
 typedef PD* PDPTR;
 
@@ -32,7 +37,7 @@ typedef PD* PDPTR;
 #define PTE_U 4
 #define PTE_ENTRY 0x80
 #define KERNEL_BASE 0xffff800000000000
-#define PAGE_SIZE (2 * 1024 * 1024)
+#define PAGE_SIZE (4 * 1024)
 
 #define PA_UP(v) ((((uint64_t)v + PAGE_SIZE - 1) >> 21) << 21)
 #define PA_DOWN(v) (((uint64_t)v >> 21) << 21)

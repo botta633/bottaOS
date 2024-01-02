@@ -4,6 +4,13 @@
 #include "../kern/includes/lib.h"
 #include "stddef.h"
 #include "stdbool.h"
+#include <stdint.h>
+
+#define KERN_MEM_SIZE (40 * 1024 * 1024)
+typedef uint64_t pte_t;
+
+#define NUM_ENTRIES 512
+
 
 static void free_region(uint64_t v, uint64_t e);
 
@@ -12,39 +19,34 @@ static struct Page free_memory;
 static uint64_t memory_end;
 extern char end;
 
+struct Page *free_mem = (struct Page *)((0x100000) + KERN_MEM_SIZE);
+
+static int is_page_present(PML4 *pml4, uint64_t virtual_address) {
+    uint64_t pml4_index = (virtual_address >> 39) &0x1FF;
+    uint64_t pdp_index = (virtual_address >> 30) &0x1FF;
+    uint64_t pd_index = (virtual_address >> 21) &0x1FF;
+    uint64_t pt_index = (virtual_address >> 12) &0x1FF;
+
+
+    if(!(pml4[pml4_index] & 0x01))
+        return 0;
+
+    uint64_t *pdp = pml4[pml4_index] & ~(0xFFFULL);
+
+
+
+
+    return 1;
+}
 void init_memory(void)
 {
-    int32_t count = *(int32_t*)0x9000;
-    uint64_t total_mem = 0;
-    struct E820 *mem_map = (struct E820*)0x9008;	
-    int free_region_count = 0;
 
-    ASSERT(count <= 50);
-
-	for(int32_t i = 0; i < count; i++) {        
-        if(mem_map[i].type == 1) {			
-            free_mem_region[free_region_count].address = mem_map[i].address;
-            free_mem_region[free_region_count].length = mem_map[i].length;
-            total_mem += mem_map[i].length;
-            free_region_count++;
-        }
-        printk("%x  %uKB  %u\n",mem_map[i].address,mem_map[i].length/1024,(uint64_t)mem_map[i].type);
-	}
-
-    for (int i = 0; i < free_region_count; i++) {                  
-        uint64_t vstart = P2V(free_mem_region[i].address);
-        uint64_t vend = vstart + free_mem_region[i].length;
-
-        if (vstart > (uint64_t)&end) {
-            free_region(vstart, vend);
-        } 
-        else if (vend > (uint64_t)&end) {
-            free_region((uint64_t)&end, vend);
-        }       
+    struct Page *temp = (struct Page *)P2V(free_mem);
+    while((void *)temp != P2V(0x100000)){
+        temp->next = temp - PAGE_SIZE;
+        temp = temp->next;
     }
     
-    memory_end = (uint64_t)free_memory.next+PAGE_SIZE;   
-    printk("%x\n",memory_end);
 }
 
 static void free_region(uint64_t v, uint64_t e)
@@ -63,24 +65,19 @@ void kfree(uint64_t v)
     ASSERT(v+PAGE_SIZE <= 0xffff800040000000);
 
     struct Page *page_address = (struct Page*)v;
-    page_address->next = free_memory.next;
-    free_memory.next = page_address;
+    page_address->next = free_mem;
+    free_mem = page_address;
 }
+
 
 void* kalloc(void)
 {
-    struct Page *page_address = free_memory.next;
+    void *temp = free_mem;
+    free_mem = free_mem->next;
 
-    if (page_address != NULL) {
-        ASSERT((uint64_t)page_address % PAGE_SIZE == 0);
-        ASSERT((uint64_t)page_address >= (uint64_t)&end);
-        ASSERT((uint64_t)page_address+PAGE_SIZE <= 0xffff800040000000);
-
-        free_memory.next = page_address->next;            
-    }
-    
-    return page_address;
+    return temp;
 }
+
 
 static PDPTR find_pml4t_entry(uint64_t map, uint64_t v, int alloc, uint32_t attribute)
 {
@@ -160,12 +157,20 @@ void switch_vm(uint64_t map)
     load_cr3(V2P(map));   
 }
 
+void setMem(void *addr, int val, int size) {
+    printk("addr is %p\n", addr); 
+    for(int i = 0; i < size; i++)
+        *(int *)(addr + i) = val;
+
+}
 uint64_t setup_kvm(void)
 {
     uint64_t page_map = (uint64_t)kalloc();
 
     if (page_map != 0) {
-        memset((void*)page_map, 0, PAGE_SIZE);        
+        setMem((void*)page_map, 0, PAGE_SIZE);
+        // TODO IMPORTANT check the bug in memset
+        //memset((void*)page_map, 0, PAGE_SIZE);        
         if (!map_pages(page_map, KERNEL_BASE, memory_end, V2P(KERNEL_BASE), PTE_P|PTE_W)) {
             free_vm(page_map);
             page_map = 0;

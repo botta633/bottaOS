@@ -3,6 +3,7 @@
 #include "../includes/print.h"
 #include "../includes/lib.h"
 #include "../../boot/mem.h"
+#include <stdint.h>
 
 static struct ScreenBuffer screen_buffer = {(char*)P2V(0xb8000), 0, 0};
 
@@ -108,6 +109,7 @@ int printk(const char *format, ...)
     int buffer_size = 0;
     int64_t integer = 0;
     char *string = 0;
+    void *addr = 0;
     va_list args;
 
     va_start(args,format);
@@ -137,6 +139,11 @@ int printk(const char *format, ...)
                     string = va_arg(args, char*);
                     buffer_size += read_string(buffer, buffer_size, string);
                     break;
+                
+                case 'p':
+                    addr = va_arg(args, void *);
+                    buffer_size += hex_to_string(buffer, buffer_size, (uint64_t)addr);
+                    
 
                 default:
                     buffer[buffer_size++] = '%';

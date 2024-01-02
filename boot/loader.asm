@@ -135,6 +135,24 @@ PMEntry:
     mov eax,cr0
     or eax,(1<<31)
     mov cr0,eax
+Initialize_com_part:
+; Initialize COM1 port (0x3F8) for 9600 baud rate, 8 data bits, no parity, 1 stop bit
+    ;mov dx, 0x3F8    ; Load COM1 port address into DX
+    ;
+    ;; Set the DLAB (Divisor Latch Access Bit) to configure baud rate divisor
+    ;mov al, 0x80     ; Set DLAB bit (bit 7)
+    ;out dx, al       ; Send the control byte to the port
+    ;
+    ;; Set the baud rate divisor (9600 baud rate)
+    ;mov al, 0x01     ; Lower byte of divisor value (115200 baud rate)
+    ;mov dx, 0x00     ; Upper byte of divisor value
+    ;out dx, al       ; Send the lower byte
+    ;mov al, 0x00     ; Load the upper byte
+    ;out dx, al       ; Send the upper byte
+ ; C;onfigure Line Control Register (8 data bits, no parity, 1 stop bit)
+    ;mov al, 0x03     ; 8 data bits, no parity, 1 stop bit
+    ;mov dx, 0x3F9    ; Load Line Control Register address
+    ;out dx, al       ; Send the control byte to the port
 
     jmp 8:LMEntry
 

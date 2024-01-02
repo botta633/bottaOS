@@ -2,23 +2,24 @@
 #define MEMs_H
 
 #include "stdbool.h"
+#include "../../boot/mem.h"
 
 
 //forward declaration of classes
-struct area;
+struct block;
 struct zone;
-struct page;
 
 /* struct area
  * Pointing to next free area and gets replaced there by data
  * Neet to maintain metdata about size
  */
 
-struct area
+struct block
 {
-  struct area *next;
-  int size;
-  void *data;
+    struct Page *first_page;
+    struct block *next;
+    int size;
+    void *data;
 };
 
 /*struct zone
@@ -27,26 +28,22 @@ struct area
  */
 struct zone
 {
-  struct area *firstFree;
-  struct area *used;
-  int idx;
-  // bookkeeping and statistics
-  int freeAreas;
-  int usedAreas;
-  int times_accessed;
+    struct block *first_free;
+    struct zone *next;
+    int idx;
+    // bookkeeping and statistics
+    int freeAreas;
+    int usedAreas;
+    int times_accessed;
 };
 
 struct heapManager
 {
-  struct zone zones[10];
-  unsigned int activeZones[10];
-  unsigned int activeIdxes[10];
+    struct zone zones[10];
+    unsigned int activeZones[10];
+    unsigned int activeIdxes[10];
 };
 
-struct page
-{
-  void *data;
-  int size;
-};
+void *zalloc(int size);
 
-#endifa a 
+#endif
