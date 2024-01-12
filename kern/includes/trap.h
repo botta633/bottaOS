@@ -3,20 +3,32 @@
 
 #include "stdint.h"
 
-struct IdtEntry{
-    uint16_t low;
-    uint16_t selector;
-    uint8_t res0;
-    uint8_t attr;
-    uint16_t mid;
-    uint32_t high;
-    uint32_t res1;
-};
+#define IDT_MAX_DESCRIPTORS 256
+#define GDT_OFFSET_KERNEL_CODE 0x8
+typedef struct{
+    uint16_t    isr_low;      // The lower 16 bits of the ISR's address
+	uint16_t    kernel_cs;    // The GDT segment selector that the CPU
+                              // will load into CS before calling the ISR
+	uint8_t	    ist;          // The IST in the TSS that the CPU will 
+                              // load into RSP; set to zero for now
+	uint8_t     attributes;   // Type and attributes; see the IDT page
+	uint16_t    isr_mid;      // The higher 16 bits of the lower 32 
+                              // bits of the ISR's address
+	uint32_t    isr_high;     // The higher 32 bits of the ISR's address
+	uint32_t    reserved;     // Set to zero
+ 
+} __attribute__((packed)) idt_entry;
 
-struct IdtPtr {
+__attribute__((aligned(0x10)))
+    static idt_entry idt[IDT_MAX_DESCRIPTORS];
+
+
+typedef struct {
     uint16_t limit;
-    uint64_t addr;
-} __attribute__((packed));
+    uint64_t base; //base address
+} __attribute__((packed)) idtr_t;
+
+static idtr_t idtr;
 
 struct TrapFrame {
     int64_t r15;
@@ -41,32 +53,12 @@ struct TrapFrame {
     int64_t rflags;
     int64_t rsp;
     int64_t ss;
-};
+}__attribute__((packed)) ;
 
 
-void vector0(void);
-void vector1(void);
-void vector2(void);
-void vector3(void);
-void vector4(void);
-void vector5(void);
-void vector6(void);
-void vector7(void);
-void vector8(void);
-void vector10(void);
-void vector11(void);
-void vector12(void);
-void vector13(void);
-void vector14(void);
-void vector16(void);
-void vector17(void);
-void vector18(void);
-void vector19(void);
-void vector32(void);
-void vector39(void);
-void init_idt(void);
-void eoi(void);
-void load_idt(struct IdtPtr *ptr);
-unsigned char read_isr(void);
+__attribute__((noreturn))
+    void exception_handler(void);
 
+void idt_set_descriptor(int , void *, uint8_t);
+void idt_init(void);
 #endif

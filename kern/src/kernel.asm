@@ -85,7 +85,7 @@ InitPIC:
     retf
 
 KernelEntry:
-    mov rsp,0x200000
+    mov rsp,0x100000
     call KMain
 
 End:

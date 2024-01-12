@@ -23,12 +23,17 @@ void print_word_to_port(const char *data) {
 void KMain(void)
 {   
     const char *color_red = "\033[31mThis text will be displayed in red.\033[0m";
-    init_idt();
-    init_memory();
-    init_kvm();
+    idt_init();
+
+    int x = 5;
+    x = x / 3;
+    //init_memory();
+    //init_kvm();
+    //initialize_physical_memory();
+    printk("came here \n");
     int *val = (int *)kalloc();
     printk("came here \n");
     *val = 5;
-    printk("%d \n", *val);
+    printk("%p \n", val);
     print_word_to_port(color_red);
 }

@@ -3,8 +3,8 @@ ENTRY(start)
 
 SECTIONS
 {
-    . = 0xffff800000200000;
-	
+    . = 0xffff800000100000;
+    /*. = 0x100000;*/
     .text : {
         *(.text)
     }

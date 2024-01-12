@@ -1,0 +1,3 @@
+break idt_init
+break trap.c:31
+

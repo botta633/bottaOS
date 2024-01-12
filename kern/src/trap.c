@@ -1,10 +1,45 @@
 #include "../includes/trap.h"
+#include "../includes/exception.h"
+#include "../includes/print.h"
 
 
-static struct IdtPtr idt_pointer;
-static struct IdtEntry vectors[256];
 
-static void init_idt_entry(struct IdtEntry *entry, uint64_t addr, uint8_t attribute)
+void exception_handler() {
+    printk("Exception Handler called\n");
+    __asm__ volatile ("cli; hlt");
+}
+
+
+void idt_set_descriptor(int vector, void *isr, uint8_t flags){
+    idt_entry *descriptor = &idt[vector];
+    descriptor->isr_low        = (uint64_t)isr & 0xFFFF;
+    descriptor->kernel_cs      = GDT_OFFSET_KERNEL_CODE;
+    descriptor->ist            = 0;
+    descriptor->attributes     = flags;
+    descriptor->isr_mid        = ((uint64_t)isr >> 16) & 0xFFFF;
+    descriptor->isr_high       = ((uint64_t)isr >> 32) & 0xFFFFFFFF;
+    descriptor->reserved       = 0;
+}
+
+extern void* isr_stub_table[];
+void idt_init() {
+    idtr.base = (uintptr_t)&idt;
+    idtr.limit = (uint16_t)sizeof(idt_entry) * IDT_MAX_DESCRIPTORS - 1;
+    //idt_set_descriptor(0, div_by_0_handler,0x8E);
+    for (int vector = 0; vector < 32; vector++) {
+//        if(vector != 14)
+        idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
+    }
+
+    //idt_set_descriptor(14, page_fault_handler, 0x8E);
+    __asm__ volatile ("lidt %0" : : "m"(idtr)); // load the new IDT
+    __asm__ volatile ("sti"); // set the interrupt flag
+}
+
+
+/*
+
+static void init_idt_entry(idt_entry *entry, uint64_t addr, uint8_t attribute)
 {
     entry->low = (uint16_t)addr;
     entry->selector = 8;
@@ -12,7 +47,7 @@ static void init_idt_entry(struct IdtEntry *entry, uint64_t addr, uint8_t attrib
     entry->mid = (uint16_t)(addr>>16);
     entry->high = (uint32_t)(addr>>32);
 }
-
+256
 void init_idt(void)
 {
     init_idt_entry(&vectors[0],(uint64_t)vector0,0x8e);
@@ -60,4 +95,4 @@ void handler(struct TrapFrame *tf)
         default:
             while (1) { }
     }
-}
+} */
